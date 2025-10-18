@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/snozz/Desktop/repo-duoc/Cuarto semestre/Fullstack II DSY1104/Ev 2/Proyecto fullstack/Back/trabajo2.2/**)",
+      "Bash(git pull)",
+      "Bash(git fetch)",
+      "Bash(git pull --allow-unrelated-histories)",
+      "Bash(git add .)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
