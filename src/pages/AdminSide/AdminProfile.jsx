@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser } from '../../utils/auth';
+import UserManagement from '../../components/admin/UserManagement/UserManagement';
 import './AdminProfile.css';
 
 export default function AdminProfile() {
@@ -99,6 +100,7 @@ export default function AdminProfile() {
 
   const tabs = [
     { id: 'info', icon: 'bi-person-gear', label: 'Mi Información' },
+    { id: 'users', icon: 'bi-people', label: 'Usuarios' },
     { id: 'stats', icon: 'bi-graph-up', label: 'Estadísticas' },
     { id: 'settings', icon: 'bi-gear', label: 'Configuración' }
   ];
@@ -272,6 +274,12 @@ export default function AdminProfile() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'users' && (
+            <div className="fade-in">
+              <UserManagement />
             </div>
           )}
 

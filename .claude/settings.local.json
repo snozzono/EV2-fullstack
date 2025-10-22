@@ -9,7 +9,9 @@
       "Bash(dir:*)",
       "Bash(npm run dev:*)",
       "Bash(npm install)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Read(//c/Users/snozz/Desktop/Ev2-fullstack-back/trabajo2.2/**)",
+      "Bash(tree /f \"C:\\Users\\snozz\\Desktop\\Ev2-fullstack-back\\trabajo2.2\\src\\main\\java\")"
     ],
     "deny": [],
     "ask": []

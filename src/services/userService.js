@@ -227,6 +227,81 @@ const userService = {
       console.error('Error updating cart quantity:', error);
       throw error;
     }
+  },
+
+  // ====== ADMIN FUNCTIONS ======
+
+  // Get all users (admin only)
+  async getAllUsers() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuario`);
+
+      if (!response.ok) {
+        throw new Error('Error al cargar usuarios');
+      }
+
+      const users = await response.json();
+      return Array.isArray(users) ? users : [];
+    } catch (error) {
+      console.error('Error fetching all users:', error);
+      throw error;
+    }
+  },
+
+  // Get user by ID (admin only)
+  async getUserById(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuario/${userId}`);
+
+      if (!response.ok) {
+        throw new Error('Error al cargar usuario');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      throw error;
+    }
+  },
+
+  // Update user (admin only)
+  async updateUser(userId, userData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuario/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar usuario');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  },
+
+  // Delete user (admin only)
+  async deleteUser(userId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/usuario/${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar usuario');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
   }
 };
 
