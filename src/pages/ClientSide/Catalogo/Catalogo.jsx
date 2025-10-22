@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const API_BASE_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:Qx1w8oou';
-const UPLOAD_API_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:8a3HDoeS';
+const UPLOAD_API_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:Qx1w8oou';
 
 // Imagen placeholder en base64 (1x1 pixel transparente)
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="400"%3E%3Crect width="300" height="400" fill="%236c757d"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="%23ffffff"%3ESin Imagen%3C/text%3E%3C/svg%3E';
@@ -71,6 +71,10 @@ export default function Catalogo() {
       }
 
       const data = await response.json();
+      console.log('Mangas recibidos:', data);
+      if (data.length > 0) {
+        console.log('Estructura de imagenPortada:', data[0].imagenPortada);
+      }
       setMangas(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
@@ -111,7 +115,7 @@ export default function Catalogo() {
   const uploadImage = async (file) => {
     try {
       const formData = new FormData();
-      formData.append('image', file, file.name);
+      formData.append('content', file, file.name);
 
       console.log('Subiendo imagen:', file.name);
 
@@ -129,7 +133,12 @@ export default function Catalogo() {
       const result = await response.json();
       console.log('Imagen subida exitosamente:', result);
 
-      // Xano devuelve un objeto con la información de la imagen, incluyendo el path
+      // Xano devuelve un objeto con la información de la imagen
+      // Si no tiene url, la construimos desde el path
+      if (!result.url && result.path) {
+        result.url = `https://x8ki-letl-twmt.n7.xano.io${result.path}`;
+      }
+
       return result;
     } catch (error) {
       console.error('Error en uploadImage:', error);
@@ -303,7 +312,7 @@ export default function Catalogo() {
       editorial: manga.editorial || ''
     });
     // Establecer preview de imagen existente
-    setImagePreview(manga.imagenPortada?.path || null);
+    setImagePreview(manga.imagenPortada?.url || null);
     setImageFile(null);
     setEditMode(true);
   };
@@ -423,7 +432,7 @@ export default function Catalogo() {
                 <div className="card h-100 shadow-sm hover-shadow transition">
                   <div className="position-relative">
                     <img
-                      src={manga.imagenPortada?.path || manga.imagenPortada || PLACEHOLDER_IMAGE}
+                      src={manga.imagenPortada?.url || PLACEHOLDER_IMAGE}
                       className="card-img-top"
                       alt={manga.titulo}
                       style={{ height: '300px', objectFit: 'cover' }}
@@ -520,7 +529,7 @@ export default function Catalogo() {
               <div className="row">
                 <div className="col-md-5">
                   <img
-                    src={selectedManga?.imagenPortada?.path || selectedManga?.imagenPortada || PLACEHOLDER_IMAGE}
+                    src={selectedManga?.imagenPortada?.url || PLACEHOLDER_IMAGE}
                     className="img-fluid rounded"
                     alt={selectedManga?.titulo}
                     onError={(e) => {

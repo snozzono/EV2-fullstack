@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
 const API_BASE_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:Qx1w8oou';
+const UPLOAD_API_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:Qx1w8oou';
+
+// Imagen placeholder
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="400"%3E%3Crect width="800" height="400" fill="%236c757d"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="%23ffffff"%3ESin Imagen%3C/text%3E%3C/svg%3E';
 
 export default function Blogs() {
   const [blogs, setBlogs] = useState([]);
@@ -15,6 +19,8 @@ export default function Blogs() {
     imagen: '',
     activo: true
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
@@ -52,12 +58,16 @@ export default function Blogs() {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/blog`);
-      
+
       if (!response.ok) {
         throw new Error('Error al cargar los blogs');
       }
-      
+
       const data = await response.json();
+      console.log('Blogs recibidos:', data);
+      if (data.length > 0) {
+        console.log('Estructura de imagen:', data[0].imagen);
+      }
       setBlogs(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
@@ -68,18 +78,96 @@ export default function Blogs() {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no debe superar los 5MB');
+        return;
+      }
+
+      setImageFile(file);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('content', file, file.name);
+
+      console.log('Subiendo imagen:', file.name);
+
+      const response = await fetch(`${UPLOAD_API_URL}/upload/image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error al subir imagen:', errorData);
+        throw new Error('Error al subir la imagen');
+      }
+
+      const result = await response.json();
+      console.log('Imagen subida exitosamente:', result);
+
+      // Si no tiene url, la construimos desde el path
+      if (!result.url && result.path) {
+        result.url = `https://x8ki-letl-twmt.n7.xano.io${result.path}`;
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error en uploadImage:', error);
+      throw error;
+    }
+  };
+
   const createBlog = async (e) => {
     e.preventDefault();
     try {
+      let imagenData = null;
+
+      // Si hay una imagen seleccionada, subirla primero
+      if (imageFile) {
+        console.log('Subiendo imagen para blog...');
+        imagenData = await uploadImage(imageFile);
+      }
+
+      const payload = {
+        titulo: formData.titulo,
+        contenido: formData.contenido,
+        descripcionCorta: formData.descripcionCorta,
+        imagen: imagenData,
+        activo: formData.activo
+      };
+
+      console.log('Payload a enviar:', payload);
+
       const response = await fetch(`${API_BASE_URL}/blog`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error('Error al crear el blog');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error del servidor:', errorData);
+        throw new Error(errorData.message || 'Error al crear el blog');
+      }
 
       await fetchBlogs();
       resetForm();
@@ -88,6 +176,7 @@ export default function Blogs() {
       bsModal?.hide();
       alert('Blog creado exitosamente!');
     } catch (err) {
+      console.error('Error completo:', err);
       alert('Error al crear el blog: ' + err.message);
     }
   };
@@ -95,15 +184,38 @@ export default function Blogs() {
   const updateBlog = async (e) => {
     e.preventDefault();
     try {
+      let imagenData = selectedBlog.imagen; // Usar la imagen existente por defecto
+
+      // Si hay una nueva imagen, subirla primero
+      if (imageFile) {
+        console.log('Subiendo nueva imagen para blog...');
+        imagenData = await uploadImage(imageFile);
+      }
+
+      const payload = {
+        titulo: formData.titulo,
+        contenido: formData.contenido,
+        descripcionCorta: formData.descripcionCorta,
+        imagen: imagenData,
+        activo: formData.activo
+      };
+
+      console.log('Actualizando blog ID:', selectedBlog.id);
+      console.log('Payload:', payload);
+
       const response = await fetch(`${API_BASE_URL}/blog/${selectedBlog.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error('Error al actualizar el blog');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error del servidor:', errorData);
+        throw new Error(errorData.message || 'Error al actualizar el blog');
+      }
 
       await fetchBlogs();
       resetForm();
@@ -112,6 +224,7 @@ export default function Blogs() {
       bsModal?.hide();
       alert('Blog actualizado exitosamente!');
     } catch (err) {
+      console.error('Error completo:', err);
       alert('Error al actualizar el blog: ' + err.message);
     }
   };
@@ -141,6 +254,8 @@ export default function Blogs() {
       imagen: '',
       activo: true
     });
+    setImageFile(null);
+    setImagePreview(null);
     setEditMode(false);
     setSelectedBlog(null);
   };
@@ -154,6 +269,9 @@ export default function Blogs() {
       imagen: blog.imagen || '',
       activo: blog.activo !== undefined ? blog.activo : true
     });
+    // Establecer preview de imagen existente
+    setImagePreview(blog.imagen?.url || null);
+    setImageFile(null);
     setEditMode(true);
   };
 
@@ -292,13 +410,14 @@ export default function Blogs() {
                         </div>
 
                         {blog.imagen && (
-                          <img 
-                            src={blog.imagen} 
-                            className="card-img-top" 
+                          <img
+                            src={blog.imagen?.url || PLACEHOLDER_IMAGE}
+                            className="card-img-top"
                             alt={blog.titulo}
                             style={{ maxHeight: '400px', objectFit: 'cover' }}
                             onError={(e) => {
-                              e.target.style.display = 'none';
+                              e.target.onerror = null;
+                              e.target.src = PLACEHOLDER_IMAGE;
                             }}
                           />
                         )}
@@ -394,11 +513,12 @@ export default function Blogs() {
             <div className="modal-body">
               {selectedBlog?.imagen && (
                 <img
-                  src={selectedBlog.imagen}
+                  src={selectedBlog.imagen?.url || PLACEHOLDER_IMAGE}
                   className="img-fluid rounded mb-3"
                   alt={selectedBlog.titulo}
                   onError={(e) => {
-                    e.target.style.display = 'none';
+                    e.target.onerror = null;
+                    e.target.src = PLACEHOLDER_IMAGE;
                   }}
                 />
               )}
@@ -496,28 +616,37 @@ export default function Blogs() {
 
                   <div className="mb-3">
                     <label htmlFor="imagen" className="form-label fw-bold">
-                      <i className="bi bi-image me-2"></i>URL de la Imagen
+                      <i className="bi bi-image me-2"></i>Imagen del Blog
                     </label>
                     <input
-                      type="url"
+                      type="file"
                       className="form-control"
                       id="imagen"
-                      value={formData.imagen}
-                      onChange={(e) => setFormData({...formData, imagen: e.target.value})}
-                      placeholder="https://ejemplo.com/imagen.jpg"
+                      accept="image/*"
+                      onChange={handleImageChange}
                     />
-                    {formData.imagen && (
-                      <div className="mt-2">
-                        <img 
-                          src={formData.imagen} 
-                          alt="Preview" 
-                          className="img-fluid rounded"
+                    <small className="text-muted">Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB</small>
+                    {imagePreview && (
+                      <div className="mt-3 text-center">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="img-fluid rounded shadow"
                           style={{ maxHeight: '200px' }}
-                          onError={(e) => {
-                            e.target.src = '';
-                            e.target.alt = 'Error al cargar imagen';
-                          }}
                         />
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => {
+                              setImageFile(null);
+                              setImagePreview(null);
+                              document.getElementById('imagen').value = '';
+                            }}
+                          >
+                            <i className="bi bi-trash me-1"></i>Eliminar imagen
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
